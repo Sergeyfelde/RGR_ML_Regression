@@ -30,9 +30,50 @@ def load_models():
     
     # Загрузка модели ML2 (GradientBoosting)
     try:
-        models['GradientBoosting'] = pickle.load(open('models/model_ml2.pkl', 'rb'))
-    except:
-        st.warning("Модель GradientBoosting не найдена")
+        if 'model_ml2.pkl' in os.listdir('models'):
+            file_size = os.path.getsize('models/model_ml2.pkl')
+            st.info(f"Размер файла model_ml2.pkl: {file_size} байт")
+            
+            # Попытка загрузить модель с отладочной информацией
+            try:
+                import joblib
+                # Сначала пробуем joblib, который более надежен при несовместимости версий
+                models['GradientBoosting'] = joblib.load('models/model_ml2.pkl')
+                st.success("✅ Модель GradientBoosting успешно загружена через joblib")
+            except Exception as joblib_error:
+                st.warning(f"Не удалось загрузить через joblib: {str(joblib_error)}")
+                
+                # Пробуем через pickle
+                try:
+                    with open('models/model_ml2.pkl', 'rb') as f:
+                        models['GradientBoosting'] = pickle.load(f)
+                    st.success("✅ Модель GradientBoosting успешно загружена через pickle")
+                except Exception as pickle_error:
+                    st.error(f"Не удалось загрузить через pickle: {str(pickle_error)}")
+                    
+                    # Если не удалось загрузить, создаем новую модель
+                    st.warning("🔄 Создание новой модели GradientBoosting...")
+                    from sklearn.ensemble import GradientBoostingRegressor
+                    
+                    # Загружаем датасет и обучаем простую модель
+                    try:
+                        data = pd.read_csv('data/EDA_regression.csv')
+                        X = data.drop('price', axis=1)
+                        y = data['price']
+                        
+                        # Обучаем простую модель
+                        simple_gb = GradientBoostingRegressor(n_estimators=50, random_state=42)
+                        simple_gb.fit(X, y)
+                        models['GradientBoosting'] = simple_gb
+                        st.success("✅ Создана новая модель GradientBoosting")
+                    except Exception as train_error:
+                        st.error(f"Не удалось создать новую модель: {str(train_error)}")
+        else:
+            st.warning("❌ Файл модели GradientBoosting (model_ml2.pkl) не найден")
+    except Exception as e:
+        st.error(f"❌ Ошибка при загрузке модели GradientBoosting: {str(e)}")
+        import traceback
+        st.error(f"Трассировка ошибки: {traceback.format_exc()}")
     
     # Загрузка модели ML3 (CatBoost)
     try:
