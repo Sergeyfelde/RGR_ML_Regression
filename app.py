@@ -31,9 +31,6 @@ def load_models():
     # Загрузка модели ML2 (GradientBoosting)
     try:
         if 'model_ml2.pkl' in os.listdir('models'):
-            file_size = os.path.getsize('models/model_ml2.pkl')
-            st.info(f"Размер файла model_ml2.pkl: {file_size} байт")
-            
             # Попытка загрузить модель с отладочной информацией
             try:
                 import joblib
