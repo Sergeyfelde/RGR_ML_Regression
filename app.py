@@ -39,7 +39,6 @@ def load_models():
                 import joblib
                 # Сначала пробуем joblib, который более надежен при несовместимости версий
                 models['GradientBoosting'] = joblib.load('models/model_ml2.pkl')
-                st.success("✅ Модель GradientBoosting успешно загружена через joblib")
             except Exception as joblib_error:
                 st.warning(f"Не удалось загрузить через joblib: {str(joblib_error)}")
                 
@@ -47,7 +46,6 @@ def load_models():
                 try:
                     with open('models/model_ml2.pkl', 'rb') as f:
                         models['GradientBoosting'] = pickle.load(f)
-                    st.success("✅ Модель GradientBoosting успешно загружена через pickle")
                 except Exception as pickle_error:
                     st.error(f"Не удалось загрузить через pickle: {str(pickle_error)}")
                     
