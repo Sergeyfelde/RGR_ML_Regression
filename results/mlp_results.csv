@@ -1,0 +1,2 @@
+Model,model_name,train_r2,test_r2,train_rmse,test_rmse
+MLPRegressor (RandomizedSearchCV),MLPRegressor (RandomizedSearchCV),0.9561354781547786,0.9562767531357144,835.6700771264324,831.6076835231214

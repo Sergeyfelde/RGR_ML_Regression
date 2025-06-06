@@ -90,6 +90,11 @@ def load_models():
     except:
         st.warning("Модель Stacking не найдена")
     
+    # Загрузка модели ML6 (MLPRegressor)
+    try:
+        models['MLPRegressor'] = pickle.load(open('models/model_ml6_rand.pkl', 'rb'))
+    except:
+        st.warning("Модель MLPRegressor не найдена")
     return models
 
 # Функция для загрузки данных
@@ -259,42 +264,20 @@ elif page == "Визуализации":
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
         st.pyplot(fig)
         
-        # Дополнительная визуализация: Парные графики
-        st.header("Парные графики (Pairplot)")
-        
-        # Выбор признаков для парного графика
-        selected_features = st.multiselect(
-            'Выберите признаки для парного графика (рекомендуется не более 5):',
-            numeric_cols,
-            default=numeric_cols[:min(4, len(numeric_cols))]
-        )
-        
-        if len(selected_features) > 0:
-            selected_features.append('price')
-            
-            # Ограничение количества строк для улучшения производительности
-            sample_size = min(1000, len(data))
-            data_sample = data.sample(sample_size, random_state=42)
-            
-            fig = sns.pairplot(data_sample[selected_features], diag_kind='kde', height=2.5)
-            fig.fig.suptitle('Парные графики выбранных признаков', y=1.02)
-            st.pyplot(fig.fig)
-        else:
-            st.warning("Выберите хотя бы один признак для построения парного графика.")
-
 # Страница 4: Предсказания
 elif page == "Предсказания":
     st.title("Получение предсказаний моделей ML")
     st.markdown("""
     ### Описание проекта
     
-    В рамках данного проекта было реализовано 5 различных моделей машинного обучения для задачи регрессии:
+    В рамках данного проекта было реализовано 6 различных моделей машинного обучения для задачи регрессии:
     
     1. **ElasticNet** - линейная регрессия с регуляризацией L1 и L2
     2. **GradientBoostingRegressor** - ансамблевый метод, использующий градиентный бустинг
     3. **CatBoostRegressor** - ансамблевый метод, использующий продвинутый градиентный бустинг
     4. **BaggingRegressor** - ансамблевый метод, использующий бэггинг
     5. **StackingRegressor** - ансамблевый метод, объединяющий предсказания базовых моделей
+    6. **MLPRegressor** - глубокая нейронная сеть (многослойный перцептрон) с подбором гиперпараметров через RandomizedSearchCV. Позволяет выявлять сложные нелинейные зависимости между признаками и целевой переменной.
     """)
     if data is not None and models:
         st.header("Выберите способ ввода данных")
@@ -304,10 +287,11 @@ elif page == "Предсказания":
             ["Ручной ввод", "Загрузка CSV файла"]
         )
         
-        # Выбор модели для предсказания
-        model_name = st.selectbox(
-            "Выберите модель для предсказания:",
-            list(models.keys())
+        # Выбор нескольких моделей для предсказания
+        selected_models = st.multiselect(
+            "Выберите одну или несколько моделей для предсказания:",
+            list(models.keys()),
+            default=list(models.keys())[:1]
         )
         
         # Получение признаков (без целевой переменной)
@@ -431,34 +415,37 @@ elif page == "Предсказания":
         
         # Кнопка для получения предсказания
         if input_df is not None and st.button("Получить предсказание"):
-            try:
-                # Получение предсказания выбранной модели
-                model = models[model_name]
-                prediction = model.predict(input_df)
-                
-                st.header("Результат предсказания")
-                
-                # Вывод предсказания для каждой строки данных
-                if len(prediction) == 1:
-                    st.success(f"Предсказанная цена: {prediction[0]:,.2f} USD")
-                    st.info("Примечание: Предсказание является точечной оценкой. Фактическое значение может отличаться.")
-                else:
-                    # Для нескольких предсказаний создаем таблицу
-                    result_df = pd.DataFrame({
-                        'Номер строки': range(1, len(prediction) + 1),
-                        'Предсказанная цена': [f"{price:,.2f} USD" for price in prediction]
-                    })
-                    st.dataframe(result_df)
-                    
-                    # Построение гистограммы предсказаний
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    sns.histplot(prediction, kde=True, ax=ax)
-                    ax.set_title('Распределение предсказанных цен')
-                    ax.set_xlabel('Предсказанная цена')
-                    ax.set_ylabel('Частота')
-                    st.pyplot(fig)
-            except Exception as e:
-                st.error(f"Ошибка при получении предсказания: {str(e)}")
+            results = []
+            for model_name in selected_models:
+                try:
+                    model = models[model_name]
+                    prediction = model.predict(input_df)
+                    if len(prediction) == 1:
+                        results.append({
+                            'Модель': model_name,
+                            'Предсказанная цена': f"{prediction[0]:,.2f} USD"
+                        })
+                    else:
+                        # Для нескольких строк — выводим все предсказания
+                        for idx, val in enumerate(prediction):
+                            results.append({
+                                'Модель': model_name,
+                                'Номер строки': idx + 1,
+                                'Предсказанная цена': f"{val:,.2f} USD"
+                            })
+                except Exception as e:
+                    st.error(f"Ошибка при получении предсказания для {model_name}: {str(e)}")
+            # Выводим таблицу с результатами
+            if results:
+                st.header("Результаты предсказания выбранных моделей")
+                results_df = pd.DataFrame(results)
+                st.dataframe(results_df)
+                # Если только одна строка — выводим как success
+                if len(input_df) == 1:
+                    for r in results:
+                        st.success(f"{r['Модель']}: {r['Предсказанная цена']}")
+                st.info("Примечание: Предсказание является точечной оценкой. Фактическое значение может отличаться.")
+
     else:
         if data is None:
             st.error("Невозможно получить предсказания: данные не загружены.")
