@@ -312,8 +312,8 @@ elif page == "Предсказания":
             for i, feature in enumerate(features):
                 # Определение типа признака
                 if feature not in ['cut', 'color', 'clarity']:
-                    min_val = float(data[feature].min())
-                    max_val = float(data[feature].max())
+                    min_val = float(data[feature].min())**0.5
+                    max_val = float(data[feature].max())*10
                     mean_val = float(data[feature].mean())
                     
                     # Определение шага в зависимости от диапазона значений 
@@ -343,31 +343,36 @@ elif page == "Предсказания":
                 else:
                     # Для категориальных признаков (cut, color, clarity) используем целые числа
                     if feature in ['cut', 'color', 'clarity']:
-                        # Для категориальных признаков задаем диапазон целых чисел
+                        # Словари для отображения и кодирования
+                        cut_map = {"Fair": 0, "Good": 1, "Very Good": 2, "Premium": 3, "Ideal": 4}
+                        color_map = {"J": 0, "I": 1, "H": 2, "G": 3, "F": 4, "E": 5, "D": 6}
+                        clarity_map = {"SI2": 0, "SI1": 1, "VS1": 2, "VS2": 3, "VVS2": 4, "VVS1": 5, "I1": 6, "IF": 7}
+
                         if feature == 'cut':
-                            options = list(range(1, 6))  # Целые числа от 1 до 5
-                            default_idx = 2  # Индекс значения 3
+                            options = list(cut_map.keys())
+                            default_idx = 2  # Обычно "Very Good"
                         elif feature == 'color':
-                            options = list(range(1, 8))  # Целые числа от 1 до 7
-                            default_idx = 3  # Индекс значения 4
+                            options = list(color_map.keys())
+                            default_idx = 3  # Обычно "G"
                         elif feature == 'clarity':
-                            options = list(range(1, 9))  # Целые числа от 1 до 8
-                            default_idx = 3  # Индекс значения 4
-                        
+                            options = list(clarity_map.keys())
+                            default_idx = 1  # Обычно "SI1"
+
                         if i < half_features:
                             with col1:
-                                input_values[feature] = st.selectbox(
-                                    f"{feature} (больше - лучше):",
-                                    options=options,
-                                    index=default_idx
-                                )
+                                selected = st.selectbox(f"{feature}:", options, index=default_idx)
                         else:
                             with col2:
-                                input_values[feature] = st.selectbox(
-                                    f"{feature} (больше - лучше):",
-                                    options=options,
-                                    index=default_idx
-                                )
+                                selected = st.selectbox(f"{feature}:", options, index=default_idx)
+
+                        # Сохраняем числовой код для инференса
+                        if feature == 'cut':
+                            input_values[feature] = cut_map[selected]
+                        elif feature == 'color':
+                            input_values[feature] = color_map[selected]
+                        elif feature == 'clarity':
+                            input_values[feature] = clarity_map[selected]
+
                     else:
                         # Для других категориальных признаков (если есть)
                         unique_values = data[feature].unique().tolist()
