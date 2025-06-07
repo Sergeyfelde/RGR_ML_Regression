@@ -5,7 +5,7 @@
 ## Описание проекта
 
 Данный проект включает:
-- 5 различных моделей машинного обучения (ElasticNet, GradientBoostingRegressor, CatBoostRegressor, BaggingRegressor, StackingRegressor)
+- 6 различных моделей машинного обучения (ElasticNet, GradientBoostingRegressor, CatBoostRegressor, BaggingRegressor, StackingRegressor, MLPRegressor)
 - Интерактивный дашборд для визуализации данных и получения предсказаний
 - Возможность ручного ввода параметров или загрузки CSV-файла для предсказания
 
